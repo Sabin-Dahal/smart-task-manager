@@ -78,7 +78,6 @@ const assignTask = async (taskId, targetUserId, currentUserId) => {
     });
 };
  
-
 const updateTaskStatus = async({taskId, userId, updateData})=>{ 
     const task = await prisma.task.findUnique({
         where: {id: taskId},
@@ -126,7 +125,58 @@ const getTaskById = async({taskId, userId})=>{
     await assertUserHasProjectAccess(userId, task.projectId, "VIEWER");
     return task;
 }
-module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById};
+
+const deleteTask = async({taskId, userId}) =>{
+    const task = await prisma.task.findUnique({
+        where: {id: taskId}});
+    if(!task){
+        const error = new Error("Task not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    await assertUserHasProjectAccess(userId, task.projectId, "OWNER");
+    return await prisma.task.delete({
+        where: {id: taskId}
+    });
+};
+
+const unassignTask = async({taskId, adminId}) =>{
+    const task = await prisma.task.findUnique({
+        where: {id: taskId}
+    });
+    if(!task){
+        const error = new Error("Task not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    await assertUserHasProjectAccess(adminId, task.projectId, "OWNER");
+
+    return await prisma.task.update({
+        where: {id: taskId},
+        data: {assignedToId: null}
+     });
+};
+
+const updateTask = async({taskId, userId, updateData}) =>{
+    const task = await prisma.task.findUnique({
+        where: {id: taskId}});
+    if(!task){
+        const error = new Error("Task not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    await assertUserHasProjectAccess(userId, task.projectId, "COLLABORATOR");
+    const {title, description, deadline} = updateData;
+    return await prisma.task.update({
+        where: {id: taskId},
+        data: {
+            title: title ?? task.title,
+            description: description ?? task.description,
+            deadline: deadline ? new Date(deadline) : task.deadline
+        }
+     });
+};
+module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById, deleteTask, assertUserHasProjectAccess, unassignTask, updateTask};
 
 
 

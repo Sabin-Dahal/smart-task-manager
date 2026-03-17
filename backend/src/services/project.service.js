@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const {assertUserHasProjectAccess} = require('./task.service');
 const createProject = async(projectData, ownerId) =>{
     return await prisma.project.create({
         data:{
@@ -45,5 +46,53 @@ const addMember = async(projectId, userId, currentUserId) =>{
     });
 };
 
+const removeMember = async ({projectId, targetUserId, requestUserId}) =>{
+    const project = await prisma.project.findUnique({where: {id: projectId}});
+    if (!project) {
+        const error = new Error ("Project not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    const membership = await prisma.projectMember.findUnique({
+        where: {userId_projectId: {userId: targetUserId, projectId}}
+    });
+    if(!membership){
+        const error = new Error ("User is not a member of the project");
+        error.statusCode = 404;
+        throw error;
+    }
+    await assertUserHasProjectAccess(requestUserId, projectId, "OWNER");
+    if(project.ownerId === targetUserId){
+        const error = new Error ("Project owner cannot be removed");
+        error.statusCode = 400;
+        throw error;
+    }
+    await prisma.task.updateMany({
+        where: {projectId, assignedToId: targetUserId},
+        data: {assignedToId: null}
+     });
+    return await prisma.projectMember.delete({
+        where: {userId_projectId: {userId: targetUserId, projectId}}
+    });
+};
 
-module.exports = {createProject, getProjects, addMember};
+const deleteProject = async({projectId, userId}) =>{
+    const project = await prisma.project.findUnique({where: {id: projectId}});
+    if (!project) {
+        const error = new Error ("Project not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    if (project.ownerId !== userId) {
+        const error = new Error ("Only project owner can delete the project");
+        error.statusCode = 403;
+        throw error;
+    }
+    return await prisma.$transaction([  //using transaction to ensure all related data is deleted together
+        prisma.task.deleteMany({where: {projectId}}),
+        prisma.projectMember.deleteMany({where: {projectId}}),
+        prisma.project.delete({where: {id: projectId}})
+    ]);
+    
+};
+module.exports = {createProject, getProjects, addMember, removeMember, deleteProject};

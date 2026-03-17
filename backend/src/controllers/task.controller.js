@@ -51,4 +51,38 @@ const getTaskById = async(req, res)=>{
         res.status(error.statuscode||500).json({error:error.message});
     }
 }; 
-module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById};
+
+const deleteTask = async(req, res)=>{
+    try{
+        const{taskId} = req.params;
+        const userId = req.user.id;
+        await taskService.deleteTask({taskId, userId});
+        res.json({message: `Task ${taskId} deleted`});
+    }catch(error){
+        res.status(error.statusCode || 500).json({error: error.message});
+    }
+};
+
+const unassignTask = async(req, res) =>{
+    try{
+        const{taskId} = req.params;
+        const adminId = req.user.id;
+        const task = await taskService.unassignTask({taskId, adminId});
+        res.json({message: "Task unassigned", task});
+    }catch(error){
+        res.status(error.statusCode || 500).json({error: error.message});
+    }
+};
+
+const updateTask = async(req, res) =>{
+    try{
+        const{taskId} = req.params;
+        const userId = req.user.id;
+        const updateData = req.body;
+        const task = await taskService.updateTask({taskId, userId, updateData});
+        res.json({message: "Task updated", task});
+    }catch(error){
+        res.status(error.statusCode || 500).json({error: error.message});
+    }
+};
+module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById, deleteTask, unassignTask};

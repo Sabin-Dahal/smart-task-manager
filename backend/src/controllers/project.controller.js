@@ -27,4 +27,25 @@ const addMember = async (req, res) => {
     }
 };
 
-module.exports = { createProject, getProjects, addMember };
+const removeMember = async (req, res) => {
+    try{
+        const { projectId, userId: targetUserId } = req.params;
+        const requestUserId = req.user.id;
+        await projectService.removeMember({projectId, targetUserId, requestUserId});
+        res.json({message: "Member removed"});
+    } catch(error){
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+};
+
+const deleteProject = async(req, res) =>{
+    try{
+        const{projectId} = req.params;
+        const userId = req.user.id;
+        await projectService.deleteProject({projectId, userId});
+        res.json({message: `Project ${projectId} deleted`});
+    }catch(error){
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+};
+module.exports = { createProject, getProjects, addMember, removeMember, deleteProject };
