@@ -25,7 +25,7 @@ const getProjects = async(userId) =>{
 };
     
 
-const addMember = async(projectId, userId, currentUserId) =>{
+const addMember = async(projectId, email, currentUserId) =>{
     const project = await prisma.project.findUnique({where: {id: projectId}});
     if (!project) {
         const error = new Error ("Project not found");
@@ -37,9 +37,28 @@ const addMember = async(projectId, userId, currentUserId) =>{
         error.statusCode = 403;
         throw error;
     }
+    const user = await prisma.user.findUnique({where: {email}});
+    if (!user) {
+        const error = new Error ("User not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    if (user.id === currentUserId) {
+        const error = new Error ("Project owner is already a member");
+        error.statusCode = 400;
+        throw error;
+    }
+    const existingMembership = await prisma.projectMember.findUnique({
+        where: {userId_projectId: {userId: user.id, projectId}}
+    });
+    if(existingMembership){
+        const error = new Error ("User is already a member of the project");
+        error.statusCode = 400;
+        throw error;
+    }
     return await prisma.projectMember.create({
         data: {
-            userId,
+            userId:user.id,
             projectId,
             role: "COLLABORATOR"
         }

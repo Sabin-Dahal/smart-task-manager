@@ -19,8 +19,8 @@ const getProjects = async (req, res) => {
 
 const addMember = async (req, res) => {
     try {
-        const { projectId, userId } = req.body;
-        const member = await projectService.addMember(projectId, userId, req.user.id);
+        const { projectId, email } = req.body;
+        const member = await projectService.addMember(projectId, email, req.user.id);
         res.json({ message: "Member added", member });
     } catch (error) {
         res.status(error.statusCode || 500).json({ error: error.message });

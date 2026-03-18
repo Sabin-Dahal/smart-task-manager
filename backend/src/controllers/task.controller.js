@@ -85,4 +85,4 @@ const updateTask = async(req, res) =>{
         res.status(error.statusCode || 500).json({error: error.message});
     }
 };
-module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById, deleteTask, unassignTask};
+module.exports = {createTask, assignTask, updateTaskStatus, getProjectTasks, getTaskById, deleteTask, unassignTask, updateTask};

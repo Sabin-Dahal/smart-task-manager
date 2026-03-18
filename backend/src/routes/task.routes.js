@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const protect = require('../middlewares/auth.middleware');
 const taskController = require('../controllers/task.controller');
-//grouping by functionality
+//grouping by functionailty
 //create
 router.post('/', protect, taskController.createTask);
 //retrivial/read
